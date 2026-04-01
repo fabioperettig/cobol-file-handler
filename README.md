@@ -1,77 +1,131 @@
 ![COBOL](https://img.shields.io/badge/COBOL-005687?style=for-the-badge&logo=ibm&logoColor=white)
-# COBOL Banking System 🏦
+# COBOL File Handler 📂
 
-A new version of this banking application in COBOL, this time interacting with an external database.
+This project is a **COBOL-based** batch application designed to read client information from a flat file, process records based on financial criteria, and generate an output file with specific data formatting.
 
-## 📝 Description
-The program simulates a bank balance processor. It takes client data from a .txt database, applying specifics financial rules.
+## 🚀 Overview
+**The program performs the following operations:**
+- Reads input data from a client database file (CLIENTDAT.txt).
+- Validates each record based on the account balance.
+- Parses and Formats selected fields into a fixed-length string.
+- Writes the processed results into a new output file (RECDATA.txt).
+- Reports execution statistics (Total count, Valid vs. Invalid records) to the console.
 
-````cobol
-IF ACCOUNT-TYPE EQUAL 1 OR ACCOUNT-TYPE EQUAL 2
-    IF ACCOUNT-TYPE EQUAL 1
-        DISPLAY "APPLYING DEBENTURES"
-        COMPUTE WRK-BALANCE = WRK-BALANCE * 1,05
-        DISPLAY "APPLYING TAX OF 10%"
-        COMPUTE WRK-BALANCE = WRK-BALANCE * 0,90
-        MOVE WRK-BALANCE TO WRK-BALANCE-EDIT
 
-    ELSE
-        DISPLAY "APPLYING DEBENTURES"
-        COMPUTE WRK-BALANCE = WRK-BALANCE * 1,10
-        DISPLAY "APPLYING TAXES"
-        COMPUTE WRK-BALANCE = WRK-BALANCE * 0,925
+## 🛠️ Technical Structure
+- File Handling: Uses FILE-CONTROL with FILE STATUS tracking for robust error handling during I/O operations.
+- Data Structures:
+    - BOOKCLIENT: External Copybook used for standardized client record layout.
 
-    END-IF
-        MOVE WRK-BALANCE TO WRK-BALANCE-EDIT
+    - REC-DATA: A 15-character output record structure. <br><br>
+
+````
+FILE-CONTROL.
+    SELECT CLIENTDAT ASSIGN TO "./CLIENTDAT.txt"
+        FILE STATUS IS FS-CLIENTDAT.
+
+    SELECT RECDATA ASSIGN TO "./RECDATA.txt"                 
+        FILE STATUS IS FS-RECDATA.
+
+    DATA                            DIVISION.
+    FILE                            SECTION.
+    FD CLIENTDAT
+        RECORDING MODE IS F.
+    *REGISTER obj equals 34 positions CHECK BOOKCLIENT.                                
+        COPY "BOOKCLIENT".
+
+    FD RECDATA
+        RECORDING MODE IS F.
+    * RECORD obj equals 15 positions.
+    01 REC-DATA                     PICTURE X(15).
     
-ELSE
-DISPLAY "WRONG INPUT"
-END-IF.
+````
+<br>
 
-DISPLAY "FINAL INFORMATIONS".
-DISPLAY WRK-NAME.
-DISPLAY "BALANCE: " WRK-BALANCE-EDIT.
+- Logic Flow:
+    - Records with a Balance > 5900 are flagged as "Valid".
+    - Records are concatenated using the STRING statement to ensure data integrity in the output.<br><br>
+````
+PROCEDURE                       DIVISION.
+
+0100-MAIN-PROCEDURE             SECTION.
 
 PERFORM 0200-INPUT-PROCEDURE.
+PERFORM 0300-PROCESS-PROCEDURE UNTIL FS-CLIENTDAT EQUAL 10.
+PERFORM 0400-OUTPUT-PROCEDURE.
+
+STOP RUN.
+0100-END.                       EXIT.
+
+0200-INPUT-PROCEDURE            SECTION.
+    OPEN INPUT CLIENTDAT.
+    OPEN OUTPUT RECDATA.
+    DISPLAY "READING DATA"
+    DISPLAY "------------".
+
+    PERFORM 0210-READ-PROCEDURE.
+
+0200-END.                       EXIT.
+
+0210-READ-PROCEDURE             SECTION.
+    READ CLIENTDAT.
+0210-END.                       EXIT.
+
+0300-PROCESS-PROCEDURE          SECTION.
+
+    ADD 1 TO WRK-COUNTER.
+
+    IF REG-BALANCE GREATER 5900
+        ADD 1 TO WRK-VALID
+    ELSE
+        ADD 1 TO WRK-UNALID
+    END-IF.
+
+    STRING REG-AGENCY           DELIMITED BY SIZE
+            REG-ACCOUNT          DELIMITED BY SIZE
+            REG-BALANCE          DELIMITED BY SIZE
+        INTO REC-DATA.
+
+    WRITE REC-DATA.
+    IF FS-RECDATA NOT EQUAL ZEROS
+        DISPLAY "ERROR WRITING DATA"  REG-AGENCY REG-ACCOUNT
+    END-IF.                                         
+
+    PERFORM 0210-READ-PROCEDURE.
+
+0300-END.                       EXIT.
 ````
-### Features:
-- **Input Handling:** Captures names and numeric values using `ACCEPT`.
-- **Financial Calculations:** 
-  - **Personal Account (1):** Applies a 5% debenture bonus and a 10% tax.
-  - **Business Account (2):** Applies a 10% debenture bonus and a 7.5% tax.
-- **Data Editing:** Uses `PICTURE` masks to format raw numeric data into a human-readable currency format (e.g., `Z.ZZZ.ZZ9,99`).
-- **Looping Logic:** Runs a process loop until the user chooses to exit (Option 9).
 
-````cobol
-DISPLAY "SELECT YOUR ACCOUNT TYPE OR PRESS '9' TO EXIT".
-DISPLAY "(1-PERSONAL ACC | 2-BUSINESS ACC | 9-EXIT)".
-ACCEPT ACCOUNT-TYPE.
-DISPLAY "ENTER YOUR NAME:".
-ACCEPT WRK-NAME.
-DISPLAY "ENTER YOUR PAYMENT:".
-ACCEPT WRK-BALANCE.
+## 📂 File Map
+| File	| Type	| Description |
+
+|CLIENTDAT.txt	| Input	| Source file containing raw client data. |
+| RECDATA.txt	Output	Processed file containing Agency, Account, and Balance.
+BOOKCLIENT.cpy	Copybook	Defines the input record layout (Agency, Account, Name, Balance).
+
+| File | Type | Description |
+| :--- | :---: | ---: |
+| CLIENTDAT.txt | Input | Raw data source file |
+| RECDATA.txt | Output | Processed file|
+| BOOKCLIENT.cpy | Copybook | Defines the input<br>record layout |
+
+## 💻 How to Run
+1. You need a COBOL compiler installed (e.g., GnuCOBOL);
+2. Place CLIENTDAT.txt and BOOKCLIENT.cpy in the project root;
+3. Compile it and execute it.  🚀
+````
+cobc -x -o clients clients.cob && ./clients
 ````
 
-
-## 🛠️ Technical Details
-- **Language:** COBOL
-- **Key Verbs used:** `COMPUTE`, `MOVE`, `PERFORM`, `EVALUATE/IF`.
-- **Formatting:** Configured to use commas as decimal points (`DECIMAL-POINT IS COMMA`).
-
-## 🚀 How to run
-If you have **GnuCOBOL** installed, you can compile and run it using:
-
-```bash
-cobc -x CLIENTS.COB
-./CLIENTS
-```
-
-## 🧠 What I learned
-- The importance of COBOL's Divisions **(IDENTIFICATION, ENVIRONMENT, DATA, PROCEDURE)**.
-
-- How to handle strict numeric formatting with PICTURE clauses.
-
-- The behavior of the DECIMAL-POINT IS COMMA clause and how it  affects arithmetic constants.
+## 📊 Sample Output (Console)
+````
+READING DATA
+---------------------------------------------
+CLIENTS READ: 010
+VALIDS: 006
+UNVALIDS: 004
+CLOSING PROCEDURE, GOODBYE
+````
 
 -----------
 
