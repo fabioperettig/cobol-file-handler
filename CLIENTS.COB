@@ -76,14 +76,23 @@
                ADD 1 TO WRK-UNALID
            END-IF.
 
-           DISPLAY REGISTER                                         
+           STRING REG-AGENCY           DELIMITED BY SIZE
+                  REG-ACCOUNT          DELIMITED BY SIZE
+                  REG-BALANCE          DELIMITED BY SIZE
+             INTO REC-DATA.
+
+           WRITE REC-DATA.
+           IF FS-RECDATA NOT EQUAL ZEROS
+               DISPLAY "ERROR WRITING DATA"  REG-AGENCY REG-ACCOUNT
+           END-IF.                                         
 
            PERFORM 0210-READ-PROCEDURE.
 
        0300-END.                       EXIT.
 
        0400-OUTPUT-PROCEDURE  SECTION. 
-           CLOSE CLIENTDAT.                     
+           CLOSE CLIENTDAT. 
+           CLOSE RECDATA.                    
            DISPLAY "CLIENTS READ: " WRK-COUNTER.
            DISPLAY "VALIDS: " WRK-VALID.                              
            DISPLAY "UNVALIDS: " WRK-UNALID.                                         
